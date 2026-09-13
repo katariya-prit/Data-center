@@ -48,12 +48,12 @@ export default function CodeEditor() {
   return (
     <div className="relative flex h-full w-full flex-col bg-[#151721] text-[#c8ced8]">
       {/* Dynamic Tabs Header Bar */}
-      <div className="flex h-10 min-h-[40px] items-center overflow-x-auto border-b border-[#282c3a] bg-[#181b25]">
+      <div className="flex h-10 min-h-10 items-center overflow-x-auto border-b border-[#282c3a] bg-[#181b25]">
         {tabs.map((tab) => (
           <div
             key={tab.id}
             onClick={() => setActiveTabId(tab.id)}
-            className={`group flex h-full cursor-pointer items-center justify-between border-r border-[#282c3a] px-3 text-xs min-w-[120px] max-w-[180px] ${
+            className={`group flex h-full cursor-pointer items-center justify-between border-r border-[#282c3a] px-3 text-xs min-w-30 max-w-[180px] ${
               activeTabId === tab.id
                 ? "bg-[#151721] text-[#e0e5ed] border-t-2 border-t-[#8ab4f8]"
                 : "text-[#747d8d] hover:bg-[#1e222d]"

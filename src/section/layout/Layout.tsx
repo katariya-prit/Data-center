@@ -35,8 +35,6 @@ export default function Layout() {
   }, [location.pathname]);
 
   const [openKey, setOpenKey] = useState(activeTopItem.key);
-
-  // Route/Page Refresh થાય ત્યારે તરત Active Key અપડેટ થશે
   useEffect(() => {
     if (activeTopItem) {
       setOpenKey(activeTopItem.key);
@@ -44,14 +42,11 @@ export default function Layout() {
   }, [activeTopItem]);
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[var(--color-bg)] text-[var(--color-text)]">
+    <div className="flex h-screen w-screen overflow-hidden bg-(--color-bg) text-(--color-text)">
       {/* 1. Left Icon Activity Bar */}
       <ActivityBar openKey={openKey} onSelect={setOpenKey} />
 
-      {/* 2. Dynamic Sidebar Component */}
       <Sidebar openKey={openKey} />
-
-      {/* 3. Main Workspace Area */}
       <div className="flex flex-1 flex-col overflow-hidden min-w-0">
         <Header />
 

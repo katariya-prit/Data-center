@@ -1,2 +1,21 @@
 @import "tailwindcss";
-@import "./theme.css";
+
+:root {
+  --color-bg: #e0e5ec;
+  --color-panel: #e0e5ec;
+  --color-text: #2d3748;
+  --color-text-muted: #6b7789;
+  --color-accent: #5b6eae;
+  --shadow-dark: #a3b1c6;
+  --shadow-light: #ffffff;
+}
+
+.dark {
+  --color-bg: #1b1b2b;
+  --color-panel: #232338;
+  --color-text: #e4e4f0;
+  --color-text-muted: #8a8aa3;
+  --color-accent: #7c93ff;
+  --shadow-dark: #121220;
+  --shadow-light: #2f2f4a;
+}

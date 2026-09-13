@@ -22,7 +22,7 @@ export default function ActivityBar({ openKey, onSelect }: ActivityBarProps) {
   }
 
   return (
-    <aside className="flex w-14 flex-shrink-0 flex-col items-center justify-between bg-[var(--color-bg)] py-4 shadow-[4px_0_12px_-4px_var(--shadow-dark)]">
+    <aside className="flex w-14 shrink-0 flex-col items-center justify-between bg-[var(--color-bg)] py-4 shadow-[4px_0_12px_-4px_var(--shadow-dark)]">
       <div className="flex flex-col gap-3">
         {navItems.map((item) => {
           const Icon = item.icon;

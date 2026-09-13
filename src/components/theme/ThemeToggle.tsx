@@ -12,9 +12,9 @@ export default function ThemeToggle() {
       whileHover={{ y: -1 }}
       whileTap={{ scale: 0.92 }}
       title="Toggle theme"
-      className="flex h-9 w-9 items-center justify-center rounded-xl text-[var(--color-text-muted)]
+      className="flex h-9 w-9 items-center justify-center rounded-xl text-(--color-text-muted)
         shadow-[4px_4px_10px_var(--shadow-dark),-4px_-4px_10px_var(--shadow-light)]
-        outline-none transition-colors hover:text-[var(--color-accent)] focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
+        outline-none transition-colors hover:text-(--color-accent) focus-visible:ring-2 focus-visible:ring-(--color-accent)"
     >
       <AnimatePresence mode="wait" initial={false}>
         {theme === "dark" ? (

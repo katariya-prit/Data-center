@@ -85,7 +85,7 @@ function TreeNode({
           onDragStart={handleDragStart}
           onClick={() => setExpanded(!expanded)}
           onContextMenu={(e) => onContextMenu(e, node)}
-          className={`group flex cursor-pointer items-center justify-between rounded-md py-[4px] px-2 text-[12px] text-[var(--color-text-muted)] transition-colors hover:bg-[#1d202b] hover:text-[var(--color-text)] ${
+          className={`group flex cursor-pointer items-center justify-between rounded-md py-1 px-2 text-[12px] text-(--color-text-muted) transition-colors hover:bg-[#1d202b] hover:text-(--color-text) ${
             isDragOver ? "bg-[#28324a] border border-dashed border-[#6cb6ff]" : ""
           }`}
           style={{ paddingLeft: `${level * 12 + 8}px` }}
@@ -122,10 +122,10 @@ function TreeNode({
       onDrop={handleDrop}
       onClick={() => openFile(node)}
       onContextMenu={(e) => onContextMenu(e, node)}
-      className={`group flex cursor-pointer items-center justify-between rounded-md py-[4px] px-2 text-[12px] transition-all ${
+      className={`group flex cursor-pointer items-center justify-between rounded-md py-1 px-2 text-[12px] transition-all ${
         isSelected
-          ? "bg-[#202636] text-[var(--color-text)] font-medium"
-          : "text-[var(--color-text-muted)] hover:bg-[#1d202b] hover:text-[var(--color-text)]"
+          ? "bg-[#202636] text-(--color-text) font-medium"
+          : "text-(--color-text-muted) hover:bg-[#1d202b] hover:text-(--color-text)"
       } ${isDragOver ? "bg-[#28324a] border border-dashed border-[#6cb6ff]" : ""}`}
       style={{ paddingLeft: `${level * 12 + 20}px` }}
     >
@@ -191,7 +191,7 @@ export default function CodeEditorSidebar() {
     <div className="relative flex h-full min-h-0 flex-col bg-[#151721] p-2 text-[#c8ced8] select-none">
       {/* Top Header Icons */}
       <div className="flex items-center justify-between px-2 py-1 mb-2 border-b border-[#282c3a]">
-        <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
+        <span className="text-[11px] font-bold uppercase tracking-wider text-(--color-text-muted)">
           Explorer
         </span>
         <div className="flex items-center gap-2 text-[#8b95a7]">
@@ -232,7 +232,7 @@ export default function CodeEditorSidebar() {
       {/* VS Code Style Right-Click Context Menu */}
       {menuState.visible && (
         <div
-          className="fixed z-50 min-w-[150px] rounded-md border border-[#282c3a] bg-[#1c1f2b] py-1 shadow-lg text-[12px] text-[#c8ced8]"
+          className="fixed z-50 min-w-37.5 rounded-md border border-[#282c3a] bg-[#1c1f2b] py-1 shadow-lg text-[12px] text-[#c8ced8]"
           style={{ top: `${menuState.y}px`, left: `${menuState.x}px` }}
         >
           {menuState.node?.type === "folder" && (
