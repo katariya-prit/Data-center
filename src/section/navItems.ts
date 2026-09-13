@@ -1,14 +1,10 @@
 import type { ComponentType } from "react";
 import {
-  VscHome,
-  VscOrganization,
-  VscBook,
   VscAccount,
   VscSettingsGear,
-  VscCode,
+  VscVscode,
 } from "react-icons/vsc";
-
-import CodeEditorSidebar from "../section/Code-Editor/core/Sidebar";
+import { IoFolderOpenSharp } from "react-icons/io5";
 
 export interface NavChild {
   label: string;
@@ -26,49 +22,27 @@ export interface NavItem {
 
 export const navItems: NavItem[] = [
   {
-    key: "dashboard",
-    label: "Dashboard",
-    icon: VscHome,
-    path: "/dashboard",
-  },
-  {
-    key: "groups",
-    label: "Groups",
-    icon: VscOrganization,
-    path: "/dashboard/groups",
-    children: [
-      { label: "Create Group", path: "/dashboard/groups/create" },
-      { label: "Group List", path: "/dashboard/groups" },
-    ],
-  },
-  {
-    key: "lessons",
-    label: "Lessons",
-    icon: VscBook,
-    path: "/dashboard/lessons",
-    children: [
-      { label: "Create Lesson", path: "/dashboard/lessons/create" },
-      { label: "Lesson List", path: "/dashboard/lessons" },
-      { label: "Lesson Upload", path: "/dashboard/lessons/upload" },
-    ],
-  },
-  {
     key: "users",
     label: "Users",
     icon: VscAccount,
-    path: "/dashboard/users",
+    path: "/dashboard",
   },
   {
     key: "code-editor",
     label: "Code Editor",
-    icon: VscCode,
-    path: "/dashboard/code-editor",
-    sidebar: CodeEditorSidebar,
+    icon: VscVscode,
+    path: "/dashboard",
   },
   {
     key: "settings",
     label: "Settings",
     icon: VscSettingsGear,
-    path: "/dashboard/settings",
+    path: "/dashboard",
   },
+  {
+    key: "fileexplorer",
+    label: "File Explorer",
+    icon: IoFolderOpenSharp,
+    path: "/dashboard"
+  }
 ];

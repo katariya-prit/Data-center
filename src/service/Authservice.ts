@@ -1,12 +1,19 @@
 import { api } from "./api";
 
+export interface AuthUser {
+  id: string;
+  enrollment: string;
+  role: "admin" | "user";
+  diskId: string;
+}
+
 export interface LoginResponse {
   token: string;
-  user: { id: string; enrollment: string };
+  user: AuthUser;
 }
 
 export interface MeResponse {
-  user: { id: string; enrollment: string };
+  user: AuthUser;
 }
 
 export function loginRequest(enrollment: string, password: string) {

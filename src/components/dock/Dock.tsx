@@ -108,7 +108,7 @@ function DockItem({
       })}
 
       {isActive && (
-        <span className="absolute -bottom-1.5 h-1.5 w-1.5 rounded-full bg-[var(--color-accent,#6cb6ff)] shadow-[0_0_8px_var(--color-accent,#6cb6ff)]" />
+        <span className="absolute bottom-0 h-1.5 w-1.5 rounded-full bg-[var(--color-accent,#6cb6ff)] shadow-[0_0_8px_var(--color-accent,#6cb6ff)]" />
       )}
     </motion.div>
   );

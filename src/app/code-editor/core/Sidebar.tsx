@@ -45,7 +45,6 @@ function TreeNode({
 
   const isSelected = activeTabId === node.id;
 
-  // Drag & Drop Handlers
   const handleDragStart = (e: React.DragEvent) => {
     e.stopPropagation();
     e.dataTransfer.setData("text/plain", node.id);
@@ -75,17 +74,13 @@ function TreeNode({
 
   if (node.type === "folder") {
     return (
-      <div
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-      >
+      <div onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
         <div
           draggable
           onDragStart={handleDragStart}
           onClick={() => setExpanded(!expanded)}
           onContextMenu={(e) => onContextMenu(e, node)}
-          className={`group flex cursor-pointer items-center justify-between rounded-md py-1 px-2 text-[12px] text-(--color-text-muted) transition-colors hover:bg-[#1d202b] hover:text-(--color-text) ${
+          className={`group flex cursor-pointer items-center justify-between rounded-md py-1 px-2 text-[12px] text-gray-400 transition-colors hover:bg-[#1d202b] hover:text-white ${
             isDragOver ? "bg-[#28324a] border border-dashed border-[#6cb6ff]" : ""
           }`}
           style={{ paddingLeft: `${level * 12 + 8}px` }}
@@ -124,8 +119,8 @@ function TreeNode({
       onContextMenu={(e) => onContextMenu(e, node)}
       className={`group flex cursor-pointer items-center justify-between rounded-md py-1 px-2 text-[12px] transition-all ${
         isSelected
-          ? "bg-[#202636] text-(--color-text) font-medium"
-          : "text-(--color-text-muted) hover:bg-[#1d202b] hover:text-(--color-text)"
+          ? "bg-[#202636] text-white font-medium"
+          : "text-gray-400 hover:bg-[#1d202b] hover:text-white"
       } ${isDragOver ? "bg-[#28324a] border border-dashed border-[#6cb6ff]" : ""}`}
       style={{ paddingLeft: `${level * 12 + 20}px` }}
     >
@@ -150,7 +145,6 @@ export default function CodeEditorSidebar() {
   const { fileTree, createNode, deleteNode } = useEditor();
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // Context Menu State
   const [menuState, setMenuState] = useState<ContextMenuState>({
     visible: false,
     x: 0,
@@ -158,7 +152,6 @@ export default function CodeEditorSidebar() {
     node: null,
   });
 
-  // Right Click Event Handler
   const handleContextMenu = (e: React.MouseEvent, node: FileNode) => {
     e.preventDefault();
     e.stopPropagation();
@@ -170,7 +163,6 @@ export default function CodeEditorSidebar() {
     });
   };
 
-  // Close context menu on outside click
   useEffect(() => {
     const handleClick = () => setMenuState((prev) => ({ ...prev, visible: false }));
     window.addEventListener("click", handleClick);
@@ -178,7 +170,7 @@ export default function CodeEditorSidebar() {
   }, []);
 
   const handleCreateFile = (targetFolderId = "root") => {
-    const fileName = prompt("Enter file name (e.g., test.ts):");
+    const fileName = prompt("Enter file name (e.g., app.ts):");
     if (fileName) createNode(targetFolderId, fileName, "file");
   };
 
@@ -187,11 +179,16 @@ export default function CodeEditorSidebar() {
     if (folderName) createNode(targetFolderId, folderName, "folder");
   };
 
+  // ચેક કરો કે ડેટા અથવા ચાઇલ્ડ છે કે નહીં
+  const hasFiles =
+    fileTree &&
+    ((fileTree.children && fileTree.children.length > 0) || fileTree.type === "file");
+
   return (
-    <div className="relative flex h-full min-h-0 flex-col bg-[#151721] p-2 text-[#c8ced8] select-none">
-      {/* Top Header Icons */}
+    <div className="relative flex h-full w-full min-h-0 flex-col bg-[#151721] p-2 text-[#c8ced8] select-none border-r border-[#282c3a]">
+      {/* Header */}
       <div className="flex items-center justify-between px-2 py-1 mb-2 border-b border-[#282c3a]">
-        <span className="text-[11px] font-bold uppercase tracking-wider text-(--color-text-muted)">
+        <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400">
           Explorer
         </span>
         <div className="flex items-center gap-2 text-[#8b95a7]">
@@ -219,20 +216,39 @@ export default function CodeEditorSidebar() {
         </div>
       </div>
 
-      {/* Dynamic File Tree */}
+      {/* Dynamic File Tree / Empty state */}
       <div className="min-h-0 flex-1 overflow-y-auto">
-        <TreeNode
-          key={refreshKey}
-          node={fileTree}
-          level={0}
-          onContextMenu={handleContextMenu}
-        />
+        {hasFiles ? (
+          // જો બાળકો (children) હોય તો જ રેન્ડર કરવું (રૂટ ફોલ્ડર પોતે નહિ દર્શાવવું જો ડાયરેક્ટ ચિલ્ડ્રન જ બતાવવા હોય)
+          fileTree.children && fileTree.children.length > 0 ? (
+            fileTree.children.map((child) => (
+              <TreeNode
+                key={child.id}
+                node={child}
+                level={0}
+                onContextMenu={handleContextMenu}
+              />
+            ))
+          ) : (
+            <TreeNode
+              key={refreshKey}
+              node={fileTree}
+              level={0}
+              onContextMenu={handleContextMenu}
+            />
+          )
+        ) : (
+          /* જ્યારે કોઈ ડેટાબેઝ કે સ્ટેટમાં ફાઇલ ન હોય ત્યારે તદ્દન ખાલી/એમ્પટી બતાવશે */
+          <div className="flex h-32 items-center justify-center text-xs text-gray-500 italic">
+            No files available
+          </div>
+        )}
       </div>
 
-      {/* VS Code Style Right-Click Context Menu */}
+      {/* Context Menu */}
       {menuState.visible && (
         <div
-          className="fixed z-50 min-w-37.5 rounded-md border border-[#282c3a] bg-[#1c1f2b] py-1 shadow-lg text-[12px] text-[#c8ced8]"
+          className="fixed z-50 min-w-[150px] rounded-md border border-[#282c3a] bg-[#1c1f2b] py-1 shadow-lg text-[12px] text-[#c8ced8]"
           style={{ top: `${menuState.y}px`, left: `${menuState.x}px` }}
         >
           {menuState.node?.type === "folder" && (

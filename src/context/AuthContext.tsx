@@ -4,6 +4,8 @@ import { loginRequest } from "../service/Authservice";
 interface AuthUser {
   id: string;
   enrollment: string;
+  role: "admin" | "user";
+  diskId: string;
 }
 
 interface AuthContextType {

@@ -1,49 +1,80 @@
-import { useNavigate, useLocation } from "react-router-dom";
-import { VscFolderLibrary } from "react-icons/vsc";
+import { useNavigate } from "react-router-dom";
 import Dock, { type DockItemData } from "./Dock";
 import { navItems } from "../../section/navItems";
-import { useExplorer } from "../explorer";
+import { useSystemTab } from "../../system/tab/TabContext";
+
+type IconConfig = { gradient: string };
+
+// દરેક એપ માટે કલર ગ્રેડિયન્ટ મેપિંગ (કી navItems ની key મુજબ છે)
+const NAV_ICON_CONFIG: Record<string, IconConfig> = {
+  users: { gradient: "linear-gradient(160deg, #ff9a9e, #f4517a)" },
+  "code-editor": { gradient: "linear-gradient(160deg, #4b5563, #1f2937)" },
+  settings: { gradient: "linear-gradient(160deg, #9aa5b1, #5f6875)" },
+  fileexplorer: { gradient: "linear-gradient(160deg, #6cb6ff, #2f6fed)" },
+};
+
+const FALLBACK_GRADIENT = "linear-gradient(160deg, #9aa5b1, #616b77)";
+
+// સીધું react-icon રેન્ડર કરવા માટેનું કમ્પોનન્ટ
+function DockIcon({ 
+  IconComponent, 
+  gradient 
+}: { 
+  IconComponent?: React.ComponentType<{ size?: number }>; 
+  gradient: string 
+}) {
+  return (
+    <div className="dock-app-icon flex items-center justify-center text-white shadow-inner" style={{ background: gradient }}>
+      {IconComponent ? <IconComponent size={26} /> : null}
+    </div>
+  );
+}
 
 export default function GlobalDock() {
   const navigate = useNavigate();
-  const location = useLocation();
-  const { isOpen, openExplorer, toggleMinimize } = useExplorer();
+  const { apps, openApp, toggleMinimizeApp, activeAppId } = useSystemTab();
 
-  // ૧. Main Navigation Items (Home, Groups, Lessons, Code Editor, Settings)
-  const navDockItems: DockItemData[] = navItems.map((item) => {
-    const IconComponent = item.icon;
-    const isActive =
-      location.pathname === item.path ||
-      location.pathname.startsWith(`${item.path}/`);
+  const allDockItems: DockItemData[] = navItems.map((item) => {
+    const appKey = item.key.toLowerCase();
+    const config = NAV_ICON_CONFIG[appKey] ?? { gradient: FALLBACK_GRADIENT };
+
+    const targetAppType = appKey === "fileexplorer" ? "explorer" : appKey;
+
+    const activeApp = apps.find(
+      (a) => a.appType === targetAppType || a.appType.includes(targetAppType)
+    );
+    const isAppActive = activeApp
+      ? activeApp.id === activeAppId && !activeApp.isMinimized
+      : false;
 
     return {
-      icon: <IconComponent size={20} />,
+      icon: <DockIcon IconComponent={item.icon} gradient={config.gradient} />,
       label: item.label,
-      isActive: isActive,
-      onClick: () => navigate(item.path),
+      isActive: isAppActive,
+      ...(appKey === "fileexplorer" ? { className: "dock-divider-before" } : {}),
+      onClick: () => {
+        navigate(item.path);
+        if (activeApp) {
+          if (activeApp.isMinimized) {
+            toggleMinimizeApp(activeApp.id);
+          } else if (activeApp.id === activeAppId) {
+            toggleMinimizeApp(activeApp.id);
+          }
+        } else {
+          openApp(targetAppType, item.label);
+        }
+      },
     };
   });
 
-  // ૨. File Explorer Icon
-  const explorerDockItem: DockItemData = {
-    icon: <VscFolderLibrary size={20} className="text-[#6cb6ff]" />,
-    label: "File Explorer",
-    isActive: isOpen,
-    onClick: () => {
-      if (!isOpen) {
-        openExplorer();
-      } else {
-        toggleMinimize();
-      }
-    },
-  };
-
-  // 3. બધા આઈટમ્સ ભેગા કરો
-  const allDockItems = [...navDockItems, explorerDockItem];
-
   return (
-    <div className="fixed bottom-3 left-1/2 -translate-x-1/2 z-50 select-none">
-      <Dock items={allDockItems} panelHeight={56} baseItemSize={42} magnification={64} />
+    <div className="fixed bottom-3 left-1/2 -translate-x-1/2 z-99999 select-none">
+      <Dock
+        items={allDockItems}
+        panelHeight={70}
+        baseItemSize={50}
+        magnification={80}
+      />
     </div>
   );
 }

@@ -1,228 +1,240 @@
-import React, { createContext, useContext, useState } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useEffect,
+  useRef,
+} from "react";
+import {
+  getExplorerTreeRequest,
+  getFileContentRequest,
+  updateFileContentRequest,
+  createNodeRequest,
+  deleteNodeRequest,
+  type FileNode as ApiFileNode,
+} from "../service/explorer_service";
+import { pathSystem } from "../system/path"; // <-- navu import, sachu relative path check karjo
 
-export interface FileNode {
-  id: string;
-  name: string;
-  type: "file" | "folder";
-  path: string;
-  language?: string;
-  content?: string;
-  children?: FileNode[];
+export interface FileNode extends ApiFileNode {
+  content?: string; // lazy-loaded, khali tabs ma vaparay chhe
 }
 
 export interface EditorTab {
-  id: string;
+  id: string; // = node.id
+  nodeId: string;
+  contentId: string | null;
   name: string;
   language: string;
   content: string;
   path: string;
+  isDirty: boolean;
+  isSaving: boolean;
 }
 
-const initialFileTree: FileNode = {
-  id: "root",
-  name: "data-center",
-  type: "folder",
-  path: "/data-center",
-  children: [
-    {
-      id: "src",
-      name: "src",
-      type: "folder",
-      path: "/data-center/src",
-      children: [
-        {
-          id: "app",
-          name: "App.tsx",
-          type: "file",
-          path: "/data-center/src/App.tsx",
-          language: "typescript",
-          content: `export default function App() {\n  return <div>Data Center</div>;\n}`,
-        },
-      ],
-    },
-    {
-      id: "package",
-      name: "package.json",
-      type: "file",
-      path: "/data-center/package.json",
-      language: "json",
-      content: `{\n  "name": "data-center",\n  "version": "1.0.0"\n}`,
-    },
-  ],
-};
-
 interface EditorContextType {
-  fileTree: FileNode;
+  diskId: string;
+  fileTree: FileNode; // wrapped virtual root, .children = actual tree
+  isTreeLoading: boolean;
   tabs: EditorTab[];
   activeTabId: string | null;
   openFile: (file: FileNode) => void;
   closeTab: (tabId: string) => void;
   setActiveTabId: (id: string) => void;
-  createNode: (parentId: string, name: string, type: "file" | "folder") => void;
-  deleteNode: (nodeId: string) => void;
+  createNode: (parentId: string, name: string, type: "file" | "folder") => Promise<void>;
+  deleteNode: (nodeId: string) => Promise<void>;
   moveNode: (draggedId: string, targetFolderId: string) => void;
   updateTabContent: (tabId: string, newContent: string) => void;
+  refreshTree: () => Promise<void>;
 }
 
 const EditorContext = createContext<EditorContextType | undefined>(undefined);
 
-export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [fileTree, setFileTree] = useState<FileNode>(initialFileTree);
+// tree ma id parthi node no path shodhi ape (create karta parentPath mate joie)
+function findNodeById(node: FileNode, id: string): FileNode | null {
+  if (node.id === id) return node;
+  for (const child of node.children || []) {
+    const found = findNodeById(child as FileNode, id);
+    if (found) return found;
+  }
+  return null;
+}
+
+export const EditorProvider: React.FC<{ diskId: string; children: React.ReactNode }> = ({
+  diskId,
+  children,
+}) => {
+  const [fileTree, setFileTree] = useState<FileNode>({
+    id: "root",
+    diskId,
+    parentId: null,
+    contentId: null,
+    name: "root",
+    type: "folder",
+    path: "/",
+    children: [],
+  });
+  const [isTreeLoading, setIsTreeLoading] = useState(false);
   const [tabs, setTabs] = useState<EditorTab[]>([]);
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
+  const saveTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
-  const openFile = (file: FileNode) => {
+  // -------- Tree fetch --------
+  const refreshTree = useCallback(async () => {
+    if (!diskId) return;
+    setIsTreeLoading(true);
+    try {
+      const res = await getExplorerTreeRequest(diskId);
+      if (res.success) {
+        setFileTree((prev) => ({ ...prev, children: res.tree }));
+      }
+    } catch (err) {
+      console.error("Tree fetch failed:", err);
+    } finally {
+      setIsTreeLoading(false);
+    }
+  }, [diskId]);
+
+  useEffect(() => {
+    refreshTree();
+  }, [refreshTree]);
+
+  // -------- Open file (lazy content fetch, exact path sathe) --------
+  const openFile = useCallback((file: FileNode) => {
     if (file.type !== "file") return;
-    const existingTab = tabs.find((t) => t.id === file.id);
-    if (!existingTab) {
+
+    setTabs((prevTabs) => {
+      const existing = prevTabs.find((t) => t.id === file.id);
+      if (existing) return prevTabs;
+
+      const normalizedPath = pathSystem.normalize(file.path);
+
       const newTab: EditorTab = {
         id: file.id,
-        name: file.name,
-        language: file.language || "plaintext",
-        content: file.content || "",
-        path: file.path,
+        nodeId: file.id,
+        contentId: file.contentId ?? null,
+        name: file.name || pathSystem.baseName(normalizedPath),
+        language: file.language || pathSystem.language(normalizedPath), // <-- pathSystem thi language
+        content: "",
+        path: normalizedPath, // <-- exact/normalized path guaranteed
+        isDirty: false,
+        isSaving: false,
       };
-      setTabs((prev) => [...prev, newTab]);
-    }
-    setActiveTabId(file.id);
-  };
 
-  const closeTab = (tabId: string) => {
-    const nextTabs = tabs.filter((t) => t.id !== tabId);
-    setTabs(nextTabs);
-    if (activeTabId === tabId) {
-      setActiveTabId(nextTabs.length > 0 ? nextTabs[nextTabs.length - 1].id : null);
-    }
-  };
-
-  const updateTabContent = (tabId: string, newContent: string) => {
-    setTabs((prev) =>
-      prev.map((tab) => (tab.id === tabId ? { ...tab, content: newContent } : tab))
-    );
-  };
-
-  const createNode = (parentId: string, name: string, type: "file" | "folder") => {
-    const ext = name.split(".").pop()?.toLowerCase();
-    let lang = "plaintext";
-    if (ext === "ts" || ext === "tsx") lang = "typescript";
-    if (ext === "json") lang = "json";
-    if (ext === "md") lang = "markdown";
-
-    const newNode: FileNode = {
-      id: `node-${Date.now()}`,
-      name,
-      type,
-      path: `/${name}`,
-      language: lang,
-      content: type === "file" ? "" : undefined,
-      children: type === "folder" ? [] : undefined,
-    };
-
-    const addRecursive = (node: FileNode): FileNode => {
-      if (node.id === parentId && node.type === "folder") {
-        return { ...node, children: [...(node.children || []), newNode] };
+      if (file.contentId) {
+        getFileContentRequest(file.contentId)
+          .then((res) => {
+            if (res.success) {
+              setTabs((cur) =>
+                cur.map((t) => (t.id === file.id ? { ...t, content: res.data } : t))
+              );
+            }
+          })
+          .catch((err) => console.error("Content fetch failed:", err));
       }
-      if (node.children) {
-        return { ...node, children: node.children.map(addRecursive) };
-      }
-      return node;
-    };
 
-    setFileTree((prev) => addRecursive(prev));
-  };
-
-  const deleteNode = (nodeId: string) => {
-    const deleteRecursive = (node: FileNode): FileNode | null => {
-      if (node.id === nodeId) return null;
-      if (node.children) {
-        return {
-          ...node,
-          children: node.children.map(deleteRecursive).filter(Boolean) as FileNode[],
-        };
-      }
-      return node;
-    };
-    const updated = deleteRecursive(fileTree);
-    if (updated) setFileTree(updated);
-    closeTab(nodeId);
-  };
-
-  // Drag and Drop વડે File/Folder ખસેડવાની પદ્ધતિ
-  const moveNode = (draggedId: string, targetFolderId: string) => {
-    if (draggedId === targetFolderId) return;
-
-    let targetNode: FileNode | null = null;
-    let targetParent: FileNode | null = null;
-
-    // ૧. પહેલા Target Item શોધી લેવી (જેથી ખબર પડે કે તે Folder છે કે File)
-    const findNode = (node: FileNode, parent: FileNode | null) => {
-      if (node.id === targetFolderId) {
-        targetNode = node;
-        targetParent = parent;
-      }
-      if (node.children) {
-        node.children.forEach((child) => findNode(child, node));
-      }
-    };
-    findNode(fileTree, null);
-
-    // જો Drop કોઈ ફાઈલ પર કર્યું હોય, તો તે ફાઈલના પેરેન્ટ ફોલ્ડરને Target બનાવવું
-    const finalTargetId =
-      targetNode && (targetNode as FileNode).type === "folder"
-        ? targetFolderId
-        : targetParent
-        ? (targetParent as FileNode).id
-        : "root";
-
-    if (draggedId === finalTargetId) return;
-
-    let draggedItem: FileNode | null = null;
-
-    // ૨. Drag કરેલી આઇટમ વૃક્ષમાંથી દૂર કરવી
-    const removeRecursive = (node: FileNode): FileNode | null => {
-      if (node.id === draggedId) {
-        draggedItem = node;
-        return null;
-      }
-      if (node.children) {
-        return {
-          ...node,
-          children: node.children
-            .map(removeRecursive)
-            .filter(Boolean) as FileNode[],
-        };
-      }
-      return node;
-    };
-
-    // ૩. Drag કરેલી આઇટમને નવા Target Folder માં Insert કરવી
-    const insertRecursive = (node: FileNode): FileNode => {
-      if (node.id === finalTargetId && node.type === "folder") {
-        return {
-          ...node,
-          children: [...(node.children || []), draggedItem!],
-        };
-      }
-      if (node.children) {
-        return {
-          ...node,
-          children: node.children.map(insertRecursive),
-        };
-      }
-      return node;
-    };
-
-    setFileTree((prev) => {
-      const treeWithoutDragged = removeRecursive(prev);
-      if (!treeWithoutDragged || !draggedItem) return prev;
-      return insertRecursive(treeWithoutDragged);
+      return [...prevTabs, newTab];
     });
-  };
+    setActiveTabId(file.id);
+  }, []);
+
+  // -------- Close tab --------
+  const closeTab = useCallback((tabId: string) => {
+    if (saveTimers.current[tabId]) {
+      clearTimeout(saveTimers.current[tabId]);
+      delete saveTimers.current[tabId];
+    }
+    setTabs((prev) => {
+      const next = prev.filter((t) => t.id !== tabId);
+      setActiveTabId((cur) =>
+        cur === tabId ? (next.length ? next[next.length - 1].id : null) : cur
+      );
+      return next;
+    });
+  }, []);
+
+  // -------- Save (debounced) --------
+  const saveTab = useCallback((tabId: string) => {
+    setTabs((prev) => {
+      const tab = prev.find((t) => t.id === tabId);
+      if (!tab || !tab.contentId) return prev;
+
+      updateFileContentRequest(tab.contentId, tab.content, tab.nodeId)
+        .then(() => {
+          setTabs((cur) =>
+            cur.map((t) => (t.id === tabId ? { ...t, isDirty: false, isSaving: false } : t))
+          );
+        })
+        .catch((err) => {
+          console.error("Save failed:", err);
+          setTabs((cur) => cur.map((t) => (t.id === tabId ? { ...t, isSaving: false } : t)));
+        });
+
+      return prev.map((t) => (t.id === tabId ? { ...t, isSaving: true } : t));
+    });
+  }, []);
+
+  const updateTabContent = useCallback(
+    (tabId: string, newContent: string) => {
+      setTabs((prev) =>
+        prev.map((t) => (t.id === tabId ? { ...t, content: newContent, isDirty: true } : t))
+      );
+      if (saveTimers.current[tabId]) clearTimeout(saveTimers.current[tabId]);
+      saveTimers.current[tabId] = setTimeout(() => saveTab(tabId), 800);
+    },
+    [saveTab]
+  );
+
+  // -------- Create (pathSystem thi path build) --------
+  const createNode = useCallback(
+    async (parentId: string, name: string, type: "file" | "folder") => {
+      const parentNode = parentId === "root" ? fileTree : findNodeById(fileTree, parentId);
+      const parentPath = parentNode ? parentNode.path : "/";
+      const newPath = pathSystem.join(parentPath, name);
+
+      try {
+        await createNodeRequest({
+          diskId,
+          parentId: parentId === "root" ? null : parentId,
+          name,
+          type,
+          path: newPath, // <-- centralized path build
+          language: type === "file" ? pathSystem.language(newPath) : undefined,
+          content: type === "file" ? "" : undefined,
+        });
+        await refreshTree();
+      } catch (err) {
+        console.error("Create failed:", err);
+      }
+    },
+    [diskId, fileTree, refreshTree]
+  );
+
+  // -------- Delete --------
+  const deleteNode = useCallback(
+    async (nodeId: string) => {
+      try {
+        await deleteNodeRequest(nodeId);
+        closeTab(nodeId);
+        await refreshTree();
+      } catch (err) {
+        console.error("Delete failed:", err);
+      }
+    },
+    [closeTab, refreshTree]
+  );
+
+  // -------- Move (backend endpoint nathi, have TODO) --------
+  const moveNode = useCallback((_draggedId: string, _targetFolderId: string) => {
+    console.warn("moveNode: backend ma move/update-parent endpoint add karya pachi wire karvu.");
+  }, []);
 
   return (
     <EditorContext.Provider
       value={{
+        diskId,
         fileTree,
+        isTreeLoading,
         tabs,
         activeTabId,
         openFile,
@@ -232,6 +244,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         deleteNode,
         moveNode,
         updateTabContent,
+        refreshTree,
       }}
     >
       {children}
@@ -240,7 +253,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 };
 
 export const useEditor = () => {
-  const context = useContext(EditorContext);
-  if (!context) throw new Error("useEditor must be used within an EditorProvider");
-  return context;
+  const ctx = useContext(EditorContext);
+  if (!ctx) throw new Error("useEditor must be used within an EditorProvider");
+  return ctx;
 };
