@@ -21,12 +21,6 @@ export interface NavItem {
   icon: ComponentType<{ size?: number }>;
   path: string;
   children?: NavChild[];
-
-  /*
-   * Custom sidebar component.
-   * If present -> Render sidebar
-   * If undefined -> Do NOT render sidebar
-   */
   sidebar?: ComponentType;
 }
 
@@ -36,7 +30,6 @@ export const navItems: NavItem[] = [
     label: "Dashboard",
     icon: VscHome,
     path: "/dashboard",
-    // Sidebar નથી આપ્યો -> No Sidebar
   },
   {
     key: "groups",
@@ -70,7 +63,6 @@ export const navItems: NavItem[] = [
     label: "Code Editor",
     icon: VscCode,
     path: "/dashboard/code-editor",
-    // ફક્ત અહીં જ કસ્ટમ સાઇડબાર આપ્યો છે
     sidebar: CodeEditorSidebar,
   },
   {

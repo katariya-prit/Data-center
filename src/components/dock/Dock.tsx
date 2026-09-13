@@ -1,8 +1,7 @@
 'use client';
 
 import React, { Children, cloneElement, useEffect, useMemo, useRef, useState } from 'react';
-import { motion, useMotionValue, useSpring, useTransform, AnimatePresence, MotionValue, type SpringOptions } from 'motion/react';
-
+import { motion, useMotionValue, useSpring, useTransform, AnimatePresence, MotionValue, type SpringOptions } from 'framer-motion';
 import './Dock.css';
 
 export interface DockItemData {
@@ -10,6 +9,7 @@ export interface DockItemData {
   label: string;
   onClick?: () => void;
   className?: string;
+  isActive?: boolean;
 }
 
 interface DockItemProps {
@@ -22,6 +22,7 @@ interface DockItemProps {
   magnification: number;
   baseItemSize: number;
   label: string;
+  isActive?: boolean;
 }
 
 interface DockLabelProps {
@@ -56,6 +57,7 @@ function DockItem({
   magnification,
   baseItemSize,
   label,
+  isActive = false,
 }: DockItemProps) {
   const ref = useRef<HTMLDivElement>(null);
   const isHovered = useMotionValue(0);
@@ -85,16 +87,13 @@ function DockItem({
   return (
     <motion.div
       ref={ref}
-      style={{
-        width: size,
-        height: size,
-      }}
+      style={{ width: size, height: size }}
       onHoverStart={() => isHovered.set(1)}
       onHoverEnd={() => isHovered.set(0)}
       onFocus={() => isHovered.set(1)}
       onBlur={() => isHovered.set(0)}
       onClick={onClick}
-      className={`dock-item ${className}`}
+      className={`dock-item relative flex items-center justify-center ${className}`}
       tabIndex={0}
       role="button"
       aria-haspopup="true"
@@ -107,6 +106,10 @@ function DockItem({
         }
         return child;
       })}
+
+      {isActive && (
+        <span className="absolute -bottom-1.5 h-1.5 w-1.5 rounded-full bg-[var(--color-accent,#6cb6ff)] shadow-[0_0_8px_var(--color-accent,#6cb6ff)]" />
+      )}
     </motion.div>
   );
 }
@@ -142,18 +145,18 @@ function DockLabel({ children, className = '', isHovered }: DockLabelProps) {
 }
 
 function DockIcon({ children, className = '' }: DockIconProps) {
-  return <div className={`dock-icon ${className}`}>{children}</div>;
+  return <div className={`dock-icon flex items-center justify-center w-full h-full ${className}`}>{children}</div>;
 }
 
 export default function Dock({
   items = [],
   className = '',
   spring = { mass: 0.1, stiffness: 150, damping: 12 },
-  magnification = 70,
-  distance = 200,
-  panelHeight = 68,
-  dockHeight = 256,
-  baseItemSize = 50,
+  magnification = 68,
+  distance = 180,
+  panelHeight = 60,
+  dockHeight = 200,
+  baseItemSize = 44,
 }: DockProps) {
   const mouseX = useMotionValue(Infinity);
   const isHovered = useMotionValue(0);
@@ -166,7 +169,7 @@ export default function Dock({
   const height = useSpring(heightRow, spring);
 
   return (
-    <motion.div style={{ height, scrollbarWidth: 'none' }} className="dock-outer">
+    <motion.div style={{ height, scrollbarWidth: 'none' }} className="dock-outer flex items-end justify-center">
       <motion.div
         onMouseMove={({ pageX }: React.MouseEvent) => {
           isHovered.set(1);
@@ -192,6 +195,7 @@ export default function Dock({
             magnification={magnification}
             baseItemSize={baseItemSize}
             label={item.label}
+            isActive={item.isActive}
           >
             <DockIcon>{item.icon}</DockIcon>
             <DockLabel>{item.label}</DockLabel>

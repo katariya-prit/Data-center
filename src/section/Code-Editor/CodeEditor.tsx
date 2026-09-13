@@ -1,7 +1,6 @@
 import Editor from "@monaco-editor/react";
 import { VscClose, VscJson, VscCode, VscSave, VscTerminal, VscPlay, VscSettingsGear } from "react-icons/vsc";
 import { useEditor } from "../../context/EditorContext";
-import Dock from "./core/Dock";
 
 export default function CodeEditor() {
   const { tabs, activeTabId, setActiveTabId, closeTab, updateTabContent } = useEditor();
@@ -36,11 +35,6 @@ export default function CodeEditor() {
     return (
       <div className="relative flex h-full w-full items-center justify-center bg-[#151721] text-[#6cb6ff]">
         <span>Select a file from sidebar to start editing</span>
-        
-        {/* Empty state માં પણ Bottom Center માં Dock આપવા માટે */}
-        <div className="absolute bottom-2 left-1/2 -translate-x-1/2">
-          <Dock items={dockItems} />
-        </div>
       </div>
     );
   }
@@ -87,16 +81,6 @@ export default function CodeEditor() {
           onChange={(val) => updateTabContent(activeTab.id, val ?? "")}
           options={{ automaticLayout: true, fontSize: 14 }}
         />
-
-        {/* Dynamic Dock Component at Bottom Center */}
-        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 pointer-events-auto z-30">
-          <Dock
-            items={dockItems}
-            panelHeight={54}
-            baseItemSize={40}
-            magnification={58}
-          />
-        </div>
       </div>
     </div>
   );
