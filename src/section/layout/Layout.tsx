@@ -2,61 +2,68 @@ import { useState, useEffect } from "react";
 import { Outlet } from "react-router-dom";
 import WindowManager from "../../system/window/WindowManager";
 import { GlobalDock } from "../../components/dock";
+import { TopMenuBar } from "../../components/menubar/TopMenuBar";
 import { TabProvider } from "../../system/tab/TabContext";
-import { useTabShortcut } from "../../system/tab/useTabShortcut";
 import { WallpaperConfig, getStoredWallpaper } from "../../system/settings/wallpaper";
-import { SearchGuidProvider, SpotlightSearch } from "../../system/searchGuid"; // 👈 Spotlight Search ઇમ્પોર્ટ કરો
+import { SearchGuidProvider, SpotlightSearch } from "../../system/searchGuid";
+import {
+    AppSwitcherOverlay,
+    useAppSwitcherShortcut,
+    useMinimizeAllShortcut,
+} from "../../system/shortcut";
 
-function KeyboardShortcutListener() {
-  useTabShortcut();
-  return null;
+function AppSwitcherListener() {
+    const switcherVisible = useAppSwitcherShortcut();
+    useMinimizeAllShortcut();
+
+    return <AppSwitcherOverlay visible={switcherVisible} />;
 }
 
 export default function Layout() {
-  // Global Wallpaper State
-  const [wallpaper, setWallpaper] = useState<string>(getStoredWallpaper);
+    const [wallpaper, setWallpaper] = useState<string>(getStoredWallpaper);
 
-  useEffect(() => {
-    const handleWallpaperUpdate = () => {
-      setWallpaper(getStoredWallpaper());
-    };
+    useEffect(() => {
+        const handleWallpaperUpdate = () => {
+            setWallpaper(getStoredWallpaper());
+        };
 
-    window.addEventListener(WallpaperConfig.EVENT_NAME, handleWallpaperUpdate);
-    window.addEventListener("storage", handleWallpaperUpdate);
+        window.addEventListener(WallpaperConfig.EVENT_NAME, handleWallpaperUpdate);
+        window.addEventListener("storage", handleWallpaperUpdate);
 
-    return () => {
-      window.removeEventListener(WallpaperConfig.EVENT_NAME, handleWallpaperUpdate);
-      window.removeEventListener("storage", handleWallpaperUpdate);
-    };
-  }, []);
+        return () => {
+            window.removeEventListener(WallpaperConfig.EVENT_NAME, handleWallpaperUpdate);
+            window.removeEventListener("storage", handleWallpaperUpdate);
+        };
+    }, []);
 
-  return (
-    <TabProvider>
-      {/* 🔴 SearchGuidProvider અહીં આપવાથી તેને TabProvider અને બાકીની સિસ્ટમનો એક્સેસ મળી જશે */}
-      <SearchGuidProvider>
-        <KeyboardShortcutListener />
-        
-        {/* Spotlight Search Component */}
-        <SpotlightSearch />
+    return (
+        <TabProvider>
+            <SearchGuidProvider>
+                <AppSwitcherListener />
+                <SpotlightSearch />
+                <div
+                    className="flex flex-col rounded-2xl h-screen w-screen overflow-hidden text-white relative transition-all duration-500 bg-cover bg-center select-none"
+                    style={{ background: wallpaper }}
+                >
+                    <TopMenuBar />
 
-        {/* 🔴 અહીં વૉલપેપર બેકગ્રાઉન્ડ આખી સ્ક્રીન પર લાગુ થશે */}
-        <div
-          className="flex h-screen w-screen overflow-hidden text-white relative transition-all duration-500 bg-cover bg-center"
-          style={{ background: wallpaper }}
-        >
-          {/* Subtle Overlay to make text and icons readable */}
-          <div className="absolute inset-0 bg-black/20 backdrop-blur-[1px] pointer-events-none z-0" />
+                    <div className="absolute inset-0 bg-black/10 backdrop-blur-[0.5px] pointer-events-none z-0" />
 
-          {/* Main View Area */}
-          <main className="flex-1 overflow-hidden p-0 relative flex flex-col h-full w-full z-10">
-            <Outlet />
-          </main>
+                    <div className="relative flex-1 w-full overflow-hidden z-10">
+                        <main className="absolute inset-0 z-0 flex flex-col overflow-hidden">
+                            <Outlet />
+                        </main>
 
-          {/* Dynamic Windows & Dock */}
-          <WindowManager />
-          <GlobalDock />
-        </div>
-      </SearchGuidProvider>
-    </TabProvider>
-  );
+                        <div id="window-workspace" className="absolute inset-0 z-10 pointer-events-none">
+                            <WindowManager />
+                        </div>
+                    </div>
+
+                    <div className="z-30 relative shrink-0">
+                        <GlobalDock />
+                    </div>
+                </div>
+            </SearchGuidProvider>
+        </TabProvider>
+    );
 }

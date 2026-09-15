@@ -66,7 +66,6 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
             style={{ top: y, left: x }}
             className="fixed z-50 w-48 bg-[#1a1c29]/95 border border-white/10 rounded-xl shadow-2xl py-1.5 backdrop-blur-md text-xs text-white/90 select-none"
         >
-            {/* Folder par: "Open" | File par: "Open in Code Editor" */}
             {target.type === "folder" && (
                 <button
                     onClick={() => run(onOpen)}
@@ -77,13 +76,13 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
                 </button>
             )}
 
-            {target.type === "file" && (
+            {(target.type === "file" || target.type === "folder") && (
                 <button
                     onClick={() => run(onOpenInCodeEditor)}
                     className="w-full flex items-center gap-2.5 px-3 py-1.5 hover:bg-blue-600/30 hover:text-white transition"
                 >
                     <VscGoToFile className="text-cyan-400" size={15} />
-                    <span>Open in Code Editor</span>
+                    <span>Open in Editor</span>
                 </button>
             )}
 

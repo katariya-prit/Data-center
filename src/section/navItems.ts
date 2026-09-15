@@ -3,6 +3,7 @@ import {
   VscAccount,
   VscSettingsGear,
   VscVscode,
+  VscTerminal, // Terminal આઇકન ઉમેર્યો
 } from "react-icons/vsc";
 import { IoFolderOpenSharp } from "react-icons/io5";
 
@@ -43,6 +44,12 @@ export const navItems: NavItem[] = [
     key: "fileexplorer",
     label: "File Explorer",
     icon: IoFolderOpenSharp,
-    path: "/dashboard"
-  }
+    path: "/dashboard",
+  },
+  {
+    key: "terminal", // Terminal નો કી ડેટા
+    label: "Terminal",
+    icon: VscTerminal,
+    path: "/dashboard",
+  },
 ];

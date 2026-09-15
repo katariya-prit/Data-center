@@ -6,7 +6,12 @@ export const useTabShortcut = () => {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Alt + Tab (Next)
+      const target = e.target as HTMLElement;
+      const isTyping =
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable;
+
       if (e.altKey && e.key === "Tab") {
         e.preventDefault();
         if (e.shiftKey) {
@@ -14,6 +19,12 @@ export const useTabShortcut = () => {
         } else {
           switchToNextTab();
         }
+        return;
+      }
+
+      if (e.shiftKey && e.key.toLowerCase() === "t" && !isTyping) {
+        e.preventDefault();
+        switchToNextTab();
       }
     };
 

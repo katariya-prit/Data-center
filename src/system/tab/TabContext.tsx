@@ -12,12 +12,13 @@ export interface AppMetadata {
   isMaximized: boolean;
   isMinimized: boolean;
   zIndex: number;
+  payload?: any;
 }
 
 export interface TabContextType {
   apps: AppMetadata[];
   activeAppId: string | null;
-  openApp: (appType: AppType, title: string) => void;
+  openApp: (appType: AppType, title: string, payload?: any) => void;
   closeApp: (id: string) => void;
   toggleMinimizeApp: (id: string) => void;
   toggleMaximizeApp: (id: string) => void;
@@ -25,7 +26,8 @@ export interface TabContextType {
   updateAppBounds: (id: string, position: { x: number; y: number }, size: { width: number; height: number }) => void;
   switchToNextTab: () => void;
   switchToPrevTab: () => void;
-  minimizeAllApps: () => void; // 👈 Home Desktop View માટે
+  minimizeAllApps: () => void;
+  closeAllApps: () => void;
 }
 
 export type SystemTabContextType = TabContextType;
@@ -37,7 +39,7 @@ const DEFAULT_APPS: AppMetadata[] = [
     id: "app-explorer-1",
     appType: "explorer",
     title: "File Explorer",
-    position: { x: 100, y: 80 },
+    position: { x: 10, y: 80 },
     size: { width: 800, height: 500 },
     isMaximized: false,
     isMinimized: false,
@@ -69,17 +71,30 @@ export const TabProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [apps]);
 
+  // વિન્ડોને એક્ટિવ કરવી તથા મિનિમાઇઝમાંથી બહાર લાવવી
   const setActiveAppId = (id: string) => {
     setActiveAppIdState(id);
     setApps((prev) =>
-      prev.map((app) => (app.id === id ? { ...app, zIndex: 50, isMinimized: false } : { ...app, zIndex: 40 }))
+      prev.map((app) =>
+        app.id === id
+          ? { ...app, zIndex: 50, isMinimized: false } // 👈 auto-restore on activate
+          : { ...app, zIndex: 40 }
+      )
     );
   };
 
-  const openApp = (appType: AppType, title: string) => {
+  // એપ ઓપન કે સ્વિચ લોજિક
+  const openApp = (appType: AppType, title: string, payload?: any) => {
     const existingApp = apps.find((a) => a.appType === appType);
     if (existingApp) {
-      setActiveAppId(existingApp.id);
+      setApps((prev) =>
+        prev.map((a) =>
+          a.id === existingApp.id
+            ? { ...a, payload, isMinimized: false, zIndex: 50 } // 👈 restore if minimized
+            : { ...a, zIndex: 40 }
+        )
+      );
+      setActiveAppIdState(existingApp.id);
     } else {
       const newAppId = `app-${appType}-${Date.now()}`;
       const newApp: AppMetadata = {
@@ -87,10 +102,11 @@ export const TabProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         appType,
         title,
         position: { x: 120 + apps.length * 20, y: 70 + apps.length * 20 },
-        size: { width: 780, height: 480 },
+        size: { width: 1000, height: 700 },
         isMaximized: false,
         isMinimized: false,
         zIndex: 50,
+        payload,
       };
       setApps((prev) => [...prev, newApp]);
       setActiveAppIdState(newAppId);
@@ -109,7 +125,17 @@ export const TabProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const toggleMinimizeApp = (id: string) => {
     setApps((prev) =>
-      prev.map((app) => (app.id === id ? { ...app, isMinimized: !app.isMinimized } : app))
+      prev.map((app) => {
+        if (app.id === id) {
+          const newMinimized = !app.isMinimized;
+          // જો અન-મિનિમાઇઝ થઈ રહી હોય તો activeApp પણ સેટ કરી દો
+          if (!newMinimized) {
+            setActiveAppIdState(id);
+          }
+          return { ...app, isMinimized: newMinimized };
+        }
+        return app;
+      })
     );
   };
 
@@ -139,7 +165,11 @@ export const TabProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setActiveAppId(apps[prevIndex].id);
   };
 
-  // 🔥 Dashboard Home પર જતાં બધી જ ઓપન ઓપન વિન્ડો મિનિમાઇઝ થઈ જશે
+  const closeAllApps = () => {
+    setApps([]);
+    setActiveAppIdState(null);
+  };
+
   const minimizeAllApps = () => {
     setApps((prev) => prev.map((app) => ({ ...app, isMinimized: true })));
     setActiveAppIdState(null);
@@ -159,6 +189,7 @@ export const TabProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         switchToNextTab,
         switchToPrevTab,
         minimizeAllApps,
+        closeAllApps,
       }}
     >
       {children}

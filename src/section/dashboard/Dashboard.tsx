@@ -3,8 +3,6 @@ import { useSearchGuid } from "../../system/searchGuid";
 import { WallpaperConfig, getStoredWallpaper } from "../../system/settings/wallpaper";
 
 export default function Dashboard() {
-  
-  // સેફ્ટી માટે ટ્રાય-કેચ જેવું બિહેવિયર અથવા ચેક કરી શકીએ કે કન્ટેક્સ્ટ અવેલેબલ છે કે નહીં
   let searchContext;
   try {
     searchContext = useSearchGuid();
@@ -34,11 +32,13 @@ export default function Dashboard() {
     return () => clearInterval(timer);
   }, []);
 
+  // macOS Lockscreen Style: AM/PM વગર ક્લીન 05:18 કે 17:18 ફોર્મેટ
   const formatTime = (date: Date) =>
-    date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true });
+    date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false });
 
+  // MONDAY, SEP 14 જેવો જ અપરકેસ લુક
   const formatDate = (date: Date) =>
-    date.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
+    date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }).toUpperCase();
 
   const handleDoubleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -52,21 +52,19 @@ export default function Dashboard() {
   return (
     <div 
       onDoubleClick={handleDoubleClick}
-      className="flex-1 w-full h-full relative overflow-hidden p-8 flex flex-col justify-between select-none cursor-default"
+      className="flex-1 w-full h-full relative overflow-hidden flex flex-col items-center justify-start pt-20 select-none cursor-default"
     >
-      {/* Dynamic System Linear Gradient Wallpaper Background */}
       <div
         className="absolute inset-0 transition-all duration-500 -z-10 pointer-events-none"
         style={{ background: wallpaper }}
       />
-      <div className="absolute inset-0 bg-black/20 backdrop-blur-[1px] -z-10 pointer-events-none" />
+      <div className="absolute inset-0 bg-black/5 backdrop-blur-[0.5px] -z-10 pointer-events-none" />
 
-      {/* Clock Widget */}
-      <div className="flex flex-col items-center justify-center mt-12 z-10 pointer-events-none">
-        <h1 className="text-9xl font-bold tracking-tight text-white drop-shadow-md">
+      <div className="flex flex-col items-center justify-center z-10 pointer-events-none space-y-1">
+        <h1 className="text-[9.5rem] leading-none font-semibold tracking-tight text-white drop-shadow-[0_4px_24px_rgba(0,0,0,0.15)] font-sans">
           {formatTime(time)}
         </h1>
-        <p className="text-base font-medium text-white/80 tracking-widest uppercase mt-2 drop-shadow">
+        <p className="text-sm font-semibold tracking-[0.25em] text-white/90 drop-shadow-[0_2px_8px_rgba(0,0,0,0.15)]">
           {formatDate(time)}
         </p>
       </div>

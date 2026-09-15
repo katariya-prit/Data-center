@@ -1,30 +1,19 @@
-export interface FileTypeInfo {
-  type: "code" | "pdf" | "image" | "text" | "folder" | "unknown";
-  label: string;
-  defaultExt: string;
+// ---- Existing utilities (tamara project ma je pehla thi hata, e AHIYA rehva joie) ----
+export function formatFileSize(bytes: number): string {
+  if (!bytes || bytes === 0) return "0 B";
+  const units = ["B", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(1024));
+  return `${(bytes / Math.pow(1024, i)).toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
 }
 
-export const EXTENSION_MAP: Record<string, FileTypeInfo> = {
-  ts: { type: "code", label: "TypeScript Source", defaultExt: "ts" },
-  tsx: { type: "code", label: "React TypeScript", defaultExt: "tsx" },
-  js: { type: "code", label: "JavaScript Source", defaultExt: "js" },
-  json: { type: "code", label: "JSON Configuration", defaultExt: "json" },
-  pdf: { type: "pdf", label: "PDF Document", defaultExt: "pdf" },
-  png: { type: "image", label: "PNG Image", defaultExt: "png" },
-  jpg: { type: "image", label: "JPEG Image", defaultExt: "jpg" },
-  svg: { type: "image", label: "Vector Image", defaultExt: "svg" },
-  txt: { type: "text", label: "Text File", defaultExt: "txt" },
-};
-
-export function getFileTypeInfo(fileName: string): FileTypeInfo {
+export function getFileTypeInfo(fileName: string): { type: string } {
   const ext = fileName.split(".").pop()?.toLowerCase() || "";
-  return EXTENSION_MAP[ext] || { type: "unknown", label: "File", defaultExt: "" };
+  if (["ts", "tsx", "js", "jsx", "json", "html", "css"].includes(ext)) return { type: "code" };
+  if (["png", "jpg", "jpeg", "gif", "svg", "webp"].includes(ext)) return { type: "image" };
+  if (ext === "pdf") return { type: "pdf" };
+  return { type: "file" };
 }
 
-export function formatFileSize(bytes: number = 1024): string {
-  if (bytes < 1024) return bytes + " B";
-  const kb = bytes / 1024;
-  if (kb < 1024) return kb.toFixed(1) + " KB";
-  const mb = kb / 1024;
-  return mb.toFixed(1) + " MB";
-}
+// ---- Navu: ContextMenu SERVICE ----
+export { default as ContextMenu } from "./ContextMenu";
+export type { ContextMenuItem, ContextMenuProps } from "./ContextMenu";
